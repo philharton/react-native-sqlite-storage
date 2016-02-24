@@ -211,6 +211,23 @@ RCT_EXPORT_METHOD(open: (NSDictionary *) options success:(RCTResponseSenderBlock
 }
 
 
+- (BOOL)addSkipBackupAttributeToItemAtPath:(NSString *) filePathString
+{
+  NSURL* URL= [NSURL fileURLWithPath: filePathString];
+  assert([[NSFileManager defaultManager] fileExistsAtPath: [URL path]]);
+  
+  NSError *error = nil;
+  BOOL success = [URL setResourceValue: [NSNumber numberWithBool: YES]
+                                forKey: NSURLIsExcludedFromBackupKey error: &error];
+  if(!success){
+    NSLog(@"Error excluding %@ from backup %@", [URL lastPathComponent], error);
+  } else {
+    NSLog(@"Successfully excluded %@ from backup", [URL lastPathComponent]);
+  }
+  return success;
+}
+
+
 -(void)createFromResource:(NSString *)dbfile withDbname:(NSString *)dbname {
   NSString *bundleRoot = [[NSBundle mainBundle] resourcePath];
   NSString *www = [bundleRoot stringByAppendingPathComponent:@"www"];
@@ -222,8 +239,10 @@ RCT_EXPORT_METHOD(open: (NSDictionary *) options success:(RCTResponseSenderBlock
     NSError *error;
     BOOL success = [[NSFileManager defaultManager] copyItemAtPath:prepopulatedDb toPath:dbname error:&error];
     
-    if(success)
+    if(success) {
       NSLog(@"Copied prepopulated DB content to: %@", dbname);
+      [self addSkipBackupAttributeToItemAtPath: dbname];
+    }
     else
       NSLog(@"Unable to copy DB file: %@", [error localizedDescription]);
   }
